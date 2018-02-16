@@ -17,7 +17,7 @@ R = np.matrix([[-1, -1, -1, -1, 1, -1],
                [-1, -1, -1, -1, -1, -1],
                [-1, -1, -1, -1, 1, -1],
                [-1, -1, -1, -1, -1, 1],
-               [-1, -1, -1, -1, -1, 1]])
+               [0, 0, 0, 0, 0, 0]])
 
 
 
@@ -30,7 +30,7 @@ gamma = 0.8
 
 # Initial state. (Usually to be chosen at random)
 initial_state = 1
-w = 2*np.random.random((6,1)) - 1  # random weights for each action
+w = 2*np.random.random((6,6)) - 1  # random weights for each action
 
 # This function returns all available actions in the state given as an argument
 def available_actions(state):
@@ -49,8 +49,11 @@ def sample_next_action(available_actions_range):
     #print("next_action: ", next_action)
     return next_action
 
-def Qpredict(action,reward,w):
-    Qpredict = reward*w[action,0]
+#def Qpredict(action,reward,w):
+def Qpredict(reward,w):
+
+    #Qpredict = reward*w[action,i]
+    Qpredict = np.multiply(reward,w)
     return Qpredict
 
 
@@ -76,10 +79,18 @@ def Qpredict(action,reward,w):
 #    Q[current_state, action] = R[current_state, action] + gamma * max_value
 #    print("Q[current_state, action] :" ,Q[current_state, action] )
 
-def update(Qtarget,current_state, action):
-    Q[current_state, action] =  Qtarget
+#def update(Qtarget,current_state, action):
+def update(qpredict,current_state):
+    #Q[current_state, action] =  Qtarget
+    Q[current_state] =  qpredict
     print("Q[current_state, action] :" ,Q)
 
+
+def weight_adjustment(w,available_act,loss,qpredict):
+     loss_pred = np.multiply(loss,qpredict)
+     adjustment = np.multiply(available_act,loss_pred)
+     w += adjustment
+     return w
 
 ## -------------------------------------------------------------------------------
 ## Training
@@ -97,53 +108,70 @@ current_state = 1
 print("initial state : ",current_state)
 qpredict = 0
 qtarget = 0
+reward = []
+maxQ = 0
 
-for i in range(6):
+for i in range(2):
     print("inside for loop now :")
 
     print("current_state : ",current_state)
+
+    if current_state == 5:
+        break
+
     available_act = available_actions(current_state)
     print("available_act : ", available_act)
 
 
     while True:
-        action = sample_next_action(available_act)
-
-        if R[current_state,action] > 0:
-            print("action :", action)
-            #break
-            reward = R[current_state,action]
+        #action = sample_next_action(available_act)
 
 
-            print("reward : ",reward)
-            qpredict = Qpredict(action,reward,w)
-            qtarget =  reward + (gamma*qpredict)
+        #if R[current_state,action] > 0:
+        #    print("action :", action)
+        #    #break
+        #    reward = R[current_state,action]
+        #
+        #
+        #    print("reward : ",reward)
+        #    qpredict = Qpredict(action,reward,w)
+        #    qtarget =  reward + (gamma*qpredict)
+        #
+        #    # updatingthe q table for representation purpose only when using nn u dont need this
+        #    update(qtarget,current_state, action)
+        #
+        #    current_state = action
+        #    break
+        #else :
+        #    loss = qtarget - qpredict
+        #    adjustment = R[current_state,action] * (loss * qpredict)
+        #    w += adjustment
 
-            # updatingthe q table for representation purpose only when using nn u dont need this
-            update(qtarget,current_state, action)
+        #print("action :", action)
 
-            current_state = action
-            break
-        else:
-          loss = qtarget - qpredict
-          adjustment = R[current_state,action] * (loss * qpredict)
-          w += adjustment
+        #reward = R[current_state,]
+        print("reward : ",available_act)
+
+        qpredict = Qpredict(available_act,w)
+        maxQ = np.argmax(qpredict)
+        qtarget = np.add(available_act,(gamma*qpredict[maxQ]) )
+
+        # updatingthe q table for representation purpose only when using nn u dont need this
+        #update(qtarget,current_state, action)
+
+        update(qpredict,current_state)
+
+        #current_state = maxQ
+        loss = qtarget - qpredict
+        print("loss for episode "+i+"is "+loss)
+        w = weight_adjustment(w,available_act,loss,qpredict)
+
+    current_state = maxQ
 
     #current_state = action
     print("weights are : ",w)
-
     #updatingthe q table for representation purpose only when using nn u dont need this
     #update(qtarget,current_state, action)
 
 
 
-
-
-
-
-
-
-
-
-    #update(current_state, action, gamma)
-    #print('-----------------')
